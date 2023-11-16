@@ -26,8 +26,6 @@ const (
   peerEndpoint = "localhost:7051"
 )
 
-// var now = time.Now()
-// var assetId = fmt.Sprintf("asset%d", now.Unix()*1e3+int64(now.Nanosecond())/1e6)
 
 func main() {
   // Connect to the gateway and call ERCC to get the enclave peer endpoint
