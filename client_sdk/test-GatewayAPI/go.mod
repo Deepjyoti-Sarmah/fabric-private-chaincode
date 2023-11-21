@@ -3,6 +3,7 @@ module github.com/hyperledger/fabric-private-chaincode/client_sdk/test-GatewayAP
 go 1.20
 
 require (
+	github.com/hyperledger/fabric v1.4.0-rc1.0.20201118191903-ec81f3e74fa1
 	github.com/hyperledger/fabric-gateway v1.4.0
 	github.com/hyperledger/fabric-private-chaincode v1.0.0-rc3
 	github.com/hyperledger/fabric-protos-go-apiv2 v0.3.1
@@ -11,7 +12,6 @@ require (
 
 require (
 	github.com/golang/protobuf v1.5.3 // indirect
-	github.com/hyperledger/fabric v1.4.0-rc1.0.20201118191903-ec81f3e74fa1 // indirect
 	github.com/hyperledger/fabric-chaincode-go v0.0.0-20201119163726-f8ef75b17719 // indirect
 	github.com/hyperledger/fabric-protos-go v0.0.0-20201028172056-a3136dde2354 // indirect
 	github.com/miekg/pkcs11 v1.1.1 // indirect
