@@ -1,4 +1,5 @@
-package main
+// package main
+package testgatewayapi
 
 import (
 	"context"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/hyperledger/fabric-gateway/pkg/client"
 	"github.com/hyperledger/fabric-gateway/pkg/identity"
+	"github.com/hyperledger/fabric-private-chaincode/internal/crypto"
 	"github.com/hyperledger/fabric-protos-go-apiv2/gateway"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -25,6 +27,27 @@ const (
 	tlsCertPath  = cryptoPath + "/peers/peer0.org1.example.com/tls/ca.crt"
 	peerEndpoint = "localhost:7051"
 )
+
+// Transaction interface that is needed by the FPC contract implementation
+// type Transaction interface {
+// 	Evaluate(args ...string) ([]byte, error)
+// }
+
+// // contractImpl implements the client-side FPC protocol
+// type contractImpl struct {
+// 	target        Contract
+// 	ercc          Contract
+// 	peerEndpoints []string
+// 	ep            crypto.EncryptionProvider
+// }
+
+// // Contract interface
+// type Contract interface {
+// 	Name() string
+// 	EvaluateTransaction(name string, args ...string) ([]byte, error)
+// 	SubmitTransaction(name string, args ...string) ([]byte, error)
+// 	CreateTransaction(name string, peerEndpoints ...string) (Transaction, error)
+// }
 
 func main() {
 	// Connect to the gateway and call ERCC to get the enclave peer endpoint
@@ -189,3 +212,16 @@ func createIdentity(wallet *identity.Wallet) error {
 
 	return nil
 }
+
+// getPeerEndpoints returns an array of peer endpoints that host the FPC chaincode enclave
+// An endpoint is a simple string with the format `host:port`
+// func (c *contractImpl) getPeerEndpoints() ([]string, error) {
+// 	if len(c.peerEndpoints) == 0 {
+// 		resp, err := c.ercc.EvaluateTransaction("queryChaincodeEndPoints", c.Name())
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 		c.peerEndpoints = strings.Split(string(resp), ",")
+// 	}
+// 	return c.peerEndpoints, nil
+// }
