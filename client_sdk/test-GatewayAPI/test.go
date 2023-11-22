@@ -1,5 +1,5 @@
-// package main
-package testgatewayapi
+package main
+// package testgatewayapi
 
 import (
 	"context"
@@ -10,7 +10,9 @@ import (
 	"log"
 	// "time"
 	"os"
-
+	
+	"strings"
+	
 	"github.com/hyperledger/fabric-gateway/pkg/client"
 	"github.com/hyperledger/fabric-gateway/pkg/identity"
 	"github.com/hyperledger/fabric-private-chaincode/internal/crypto"
@@ -18,9 +20,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
-	"strings"
 
-	"github.com/hyperledger/fabric-private-chaincode/internal/utils"
+	// "github.com/hyperledger/fabric-private-chaincode/internal/utils"
 )
 
 const (
@@ -85,25 +86,36 @@ func connectToEnclaveAndFetchEndpoint() (string, error) {
 	}
 
 	// Connect to the gateway
-	gw, err := client.Connect(
-		client.WithIdentity(wallet, "User1"),
-		client.WithNetwork("mychannel"),
-		client.WithEndpoint(peerEndpoint),
-		client.WithClientOptions(
-			client.WithTLSCert(tlsCertPath),
-			client.WithGRPCOptions(grpc.WithBlock()),
-		),
-	)
-	if err != nil {
-		return "", err
-	}
-	defer gw.Close()
+	// gw, err := client.Connect(
+	// 	client.WithIdentity(wallet, "User1"),
+	// 	client.WithNetwork("mychannel"),
+	// 	client.WithEndpoint(peerEndpoint),
+	// 	client.WithClientOptions(
+	// 		client.WithTLSCert(tlsCertPath),
+	// 		client.WithGRPCOptions(grpc.WithBlock()),
+	// 	),
+	// )
+
+// Connect to the gateway
+  gw, err := client.Connect(
+    client.WithIdentity(wallet, "User1"),
+    client.WithNetwork("mychannel"),
+    client.WithEndpoint(peerEndpoint),
+    client.WithTLSCert(tlsCertPath),
+    client.WithGRPCOptions(grpc.WithBlock()),
+  )
+  if err != nil {
+    log.Fatalf("Failed to connect to gateway: %v", err)
+  }
+  
+  defer gw.Close()
 
 	// Get the ercc contract
 	erccContract := gw.GetNetwork("mychannel").GetContract("ercc")
 
 	// get Enclave Peer Endpoint to the function ???????????????????????
 	result, err := erccContract.EvaluateTransaction("get Enclave Peer Endpoint")
+	// result, err := erccContract.EvaluateTransaction("getPeerEndpoints")
 	if err != nil {
 		return "", fmt.Errorf("failed to evaluate transaction: %w", err)
 	}
@@ -156,7 +168,7 @@ func invokeFPCChaincode(enclaveClientConnection *grpc.ClientConn) error {
 	_, err = client.Submit(context.Background(), &gateway.SubmitRequest{
 		TransactionId: transaction.TransactionId,
 		ChannelId:     "mychannel",
-		Endorsers:     []string{"peer0.org1.example.com", "peer0.org2.example.com"},
+		// Endorsers:     []string{"peer0.org1.example.com", "peer0.org2.example.com"},
 	})
 	if err != nil {
 		return fmt.Errorf("failed to submit transaction: %w", err)
@@ -192,6 +204,7 @@ func loadIdentity() (*identity.Wallet, error) {
 	return wallet, nil
 }
 
+
 func createIdentity(wallet *identity.Wallet) error {
 	// Load the user's certificate
 	certificatePEM, err := os.ReadFile(certPath)
@@ -215,6 +228,10 @@ func createIdentity(wallet *identity.Wallet) error {
 	}
 
 	return nil
+}
+
+func (c *contractImpl) Name() string {
+	return c.target.Name()
 }
 
 // getPeerEndpoints returns an array of peer endpoints that host the FPC chaincode enclave
