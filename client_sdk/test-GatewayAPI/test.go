@@ -1,4 +1,5 @@
 package main
+
 // package testgatewayapi
 
 import (
@@ -10,17 +11,15 @@ import (
 	"log"
 	// "time"
 	"os"
-	
+
 	"strings"
-	
+
 	"github.com/hyperledger/fabric-gateway/pkg/client"
 	"github.com/hyperledger/fabric-gateway/pkg/identity"
 	"github.com/hyperledger/fabric-private-chaincode/internal/crypto"
 	"github.com/hyperledger/fabric-protos-go-apiv2/gateway"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
-
-
 	// "github.com/hyperledger/fabric-private-chaincode/internal/utils"
 )
 
@@ -79,48 +78,112 @@ func main() {
 
 // Connect to the gateway and call ERCC to get the enclave peer endpoint
 func connectToEnclaveAndFetchEndpoint() (string, error) {
+	// 	// Load the user identity
+	// 	wallet, err := loadIdentity()
+	// 	if err != nil {
+	// 		return "", err
+	// 	}
+
+	// 	// Connect to the gateway
+	// 	// gw, err := client.Connect(
+	// 	// 	client.WithIdentity(wallet, "User1"),
+	// 	// 	client.WithNetwork("mychannel"),
+	// 	// 	client.WithEndpoint(peerEndpoint),
+	// 	// 	client.WithClientOptions(
+	// 	// 		client.WithTLSCert(tlsCertPath),
+	// 	// 		client.WithGRPCOptions(grpc.WithBlock()),
+	// 	// 	),
+	// 	// )
+
+	// // Connect to the gateway
+	//   gw, err := client.Connect(
+	//     client.WithIdentity(wallet, "User1"),
+	//     client.WithNetwork("mychannel"),
+	//     client.WithEndpoint(peerEndpoint),
+	//     client.WithTLSCert(tlsCertPath),
+	//     client.WithGRPCOptions(grpc.WithBlock()),
+	//   )
+	//   if err != nil {
+	//     log.Fatalf("Failed to connect to gateway: %v", err)
+	//   }
+	//
+	//   defer gw.Close()
+
+	// 	// Get the ercc contract
+	// 	erccContract := gw.GetNetwork("mychannel").GetContract("ercc")
+
+	// 	// get Enclave Peer Endpoint to the function ???????????????????????
+	// 	result, err := erccContract.EvaluateTransaction("get Enclave Peer Endpoint")
+	// 	// result, err := erccContract.EvaluateTransaction("getPeerEndpoints")
+	// 	if err != nil {
+	// 		return "", fmt.Errorf("failed to evaluate transaction: %w", err)
+	// 	}
+
+	// 	return string(result), nil
+
 	// Load the user identity
 	wallet, err := loadIdentity()
 	if err != nil {
 		return "", err
 	}
 
-	// Connect to the gateway
-	// gw, err := client.Connect(
-	// 	client.WithIdentity(wallet, "User1"),
-	// 	client.WithNetwork("mychannel"),
-	// 	client.WithEndpoint(peerEndpoint),
-	// 	client.WithClientOptions(
-	// 		client.WithTLSCert(tlsCertPath),
-	// 		client.WithGRPCOptions(grpc.WithBlock()),
-	// 	),
-	// )
+	// Create a gRPC connection to the Fabric Gateway
+	clientConnection, err := newGrpcConnection()
+	if err != nil {
+		return "", err
+	}
 
-// Connect to the gateway
-  gw, err := client.Connect(
-    client.WithIdentity(wallet, "User1"),
-    client.WithNetwork("mychannel"),
-    client.WithEndpoint(peerEndpoint),
-    client.WithTLSCert(tlsCertPath),
-    client.WithGRPCOptions(grpc.WithBlock()),
-  )
-  if err != nil {
-    log.Fatalf("Failed to connect to gateway: %v", err)
-  }
-  
-  defer gw.Close()
+	// Connect to the gateway
+	gw, err := client.Connect(
+		client.WithClientConnection(clientConnection),
+		client.WithIdentity(wallet, "User1"),
+		client.WithSigner(newSigner()),
+	)
+	if err != nil {
+		return "", err
+	}
+	defer gw.Close()
 
 	// Get the ercc contract
 	erccContract := gw.GetNetwork("mychannel").GetContract("ercc")
 
-	// get Enclave Peer Endpoint to the function ???????????????????????
+	// Call the getEnclavePeerEndpoint function
 	result, err := erccContract.EvaluateTransaction("get Enclave Peer Endpoint")
-	// result, err := erccContract.EvaluateTransaction("getPeerEndpoints")
 	if err != nil {
 		return "", fmt.Errorf("failed to evaluate transaction: %w", err)
 	}
 
 	return string(result), nil
+}
+
+func newGrpcConnection() (*grpc.ClientConn, error) {
+	// Establish a gRPC connection to the Fabric Gateway
+	connection, err := grpc.Dial(peerEndpoint, grpc.WithTransportCredentials(credentials.NewClientTLSFromCert(certPool, "")))
+	if err != nil {
+		return nil, err
+	}
+
+	return connection, nil
+}
+
+func newSigner() identity.Sign {
+	// Load the user's private key
+	privateKeyPEM, err := os.ReadFile(keyPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read private key file: %w", err)
+	}
+
+	privateKey, err := identity.PrivateKeyFromPEM(privateKeyPEM)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get private key from PEM: %w", err)
+	}
+
+	sign, err := identity.NewPrivateKeySign(privateKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create new private key signer: %w", err)
+	}
+
+	return sign
 }
 
 // Establish a new gRPC connection to the enclave peer
@@ -203,7 +266,6 @@ func loadIdentity() (*identity.Wallet, error) {
 
 	return wallet, nil
 }
-
 
 func createIdentity(wallet *identity.Wallet) error {
 	// Load the user's certificate
