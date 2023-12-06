@@ -3,8 +3,8 @@ package main
 // package testgatewayapi
 
 import (
-	"context"
 	"crypto/x509"
+
 	// "encoding/pem"
 	"fmt"
 	// "io/ioutil"
@@ -21,6 +21,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	// "github.com/hyperledger/fabric-private-chaincode/internal/utils"
+	"github.com/hyperledger/fabric-sdk-go/pkg/gateway"
 )
 
 const (
@@ -148,7 +149,8 @@ func connectToEnclaveAndFetchEndpoint() (string, error) {
 	erccContract := gw.GetNetwork("mychannel").GetContract("ercc")
 
 	// Call the getEnclavePeerEndpoint function
-	result, err := erccContract.EvaluateTransaction("get Enclave Peer Endpoint")
+	// result, err := erccContract.EvaluateTransaction("get Enclave Peer Endpoint")
+	result, err := erccContract.EvaluateTransaction("getPeerEndpoints")
 	if err != nil {
 		return "", fmt.Errorf("failed to evaluate transaction: %w", err)
 	}
@@ -157,8 +159,30 @@ func connectToEnclaveAndFetchEndpoint() (string, error) {
 }
 
 func newGrpcConnection() (*grpc.ClientConn, error) {
+
+	// Load the TLS certificate
+	certificate, err := loadCertificate(tlsCertPath)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create a cert pool and add the TLS certificate
+	certPool := x509.NewCertPool()
+	certPool.AddCert(certificate)
+
+	// Create gRPC transport credentials using the TLS certificate pool
+	transportCredentials := credentials.NewClientTLSFromCert(certPool, "")
+
 	// Establish a gRPC connection to the Fabric Gateway
-	connection, err := grpc.Dial(peerEndpoint, grpc.WithTransportCredentials(credentials.NewClientTLSFromCert(certPool, "")))
+	// connection, err := grpc.Dial(peerEndpoint, grpc.WithTransportCredentials(credentials.NewClientTLSFromCert(certPool, "")))
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	// return connection, nil
+
+	// Establish a gRPC connection to the Fabric Gateway
+	connection, err := grpc.Dial(peerEndpoint, grpc.WithTransportCredentials(transportCredentials))
 	if err != nil {
 		return nil, err
 	}
@@ -166,7 +190,7 @@ func newGrpcConnection() (*grpc.ClientConn, error) {
 	return connection, nil
 }
 
-func newSigner() identity.Sign {
+func newSigner() (identity.Sign, error) {
 	// Load the user's private key
 	privateKeyPEM, err := os.ReadFile(keyPath)
 	if err != nil {
@@ -183,7 +207,7 @@ func newSigner() identity.Sign {
 		return nil, fmt.Errorf("failed to create new private key signer: %w", err)
 	}
 
-	return sign
+	return sign, nil
 }
 
 // Establish a new gRPC connection to the enclave peer
@@ -210,35 +234,81 @@ func newEnclaveGrpcConnection(enclavePeerEndpoint string) (*grpc.ClientConn, err
 	return connection, nil
 }
 
-// Invoke FPC chaincode via direct gRPC connection
-func invokeFPCChaincode(enclaveClientConnection *grpc.ClientConn) error {
-	// Create a new gRPC client for the FPC chaincode
-	client := gateway.NewGatewayClient(enclaveClientConnection)
+// // Invoke FPC chaincode via direct gRPC connection
+// func invokeFPCChaincode(enclaveClientConnection *grpc.ClientConn) error {
+// 	// Create a new gRPC client for the FPC chaincode
+// 	client := gateway.NewGatewayClient(enclaveClientConnection)
 
-	// Create a new transaction
-	transaction, err := client.NewTransaction(context.Background(), &gateway.NewTransactionRequest{
-		ChannelId:     "mychannel",
-		ChaincodeId:   "mycc",
-		TransactionId: "tx1",
-		Args:          [][]byte{[]byte("arg1"), []byte("arg2")},
-	})
+// 	// Create a new transaction
+// 	transaction, err := client.NewTransaction(context.Background(), &gateway.NewTransactionRequest{
+// 		ChannelId:     "mychannel",
+// 		ChaincodeId:   "mycc",
+// 		TransactionId: "tx1",
+// 		Args:          [][]byte{[]byte("arg1"), []byte("arg2")},
+// 	})
 
+// 	if err != nil {
+// 		return fmt.Errorf("failed to create new transaction: %w", err)
+// 	}
+
+// 	// Submit the transaction
+// 	_, err = client.Submit(context.Background(), &gateway.SubmitRequest{
+// 		TransactionId: transaction.TransactionId,
+// 		ChannelId:     "mychannel",
+// 		// Endorsers:     []string{"peer0.org1.example.com", "peer0.org2.example.com"},
+// 	})
+// 	if err != nil {
+// 		return fmt.Errorf("failed to submit transaction: %w", err)
+// 	}
+
+// 	return nil
+// }
+
+func invokeFPCChaincode(gw *gateway.Gateway) error {
+	// // Get the network and contract
+	// network, err := gw.GetNetwork("mychannel")
+	// if err != nil {
+	// 	return fmt.Errorf("failed to get network: %w", err)
+	// }
+	// contract := network.GetContract("mycc")
+
+	// // Create a transaction
+	// txn, err := contract.CreateTransaction("transactionName",
+	// 	gateway.WithEndorsingPeers("peer0.org1.example.com", "peer0.org2.example.com"),
+	// )
+	// if err != nil {
+	// 	return fmt.Errorf("failed to create transaction: %w", err)
+	// }
+
+	// // Submit the transaction
+	// result, err := txn.Submit("arg1", "arg2")
+	// if err != nil {
+	// 	return fmt.Errorf("failed to submit transaction: %w", err)
+	// }
+
+	// fmt.Printf("Transaction result: %s\n", string(result))
+
+	// return nil
+
+	// Get the network and contract
+	network, err := gw.GetNetwork("mychannel")
 	if err != nil {
-		return fmt.Errorf("failed to create new transaction: %w", err)
+		return fmt.Errorf("failed to get network: %w", err)
 	}
+	contract := network.GetContract("mycc")
 
 	// Submit the transaction
-	_, err = client.Submit(context.Background(), &gateway.SubmitRequest{
-		TransactionId: transaction.TransactionId,
-		ChannelId:     "mychannel",
-		// Endorsers:     []string{"peer0.org1.example.com", "peer0.org2.example.com"},
-	})
+	result, err := contract.SubmitTransaction("transactionName", "arg1", "arg2")
 	if err != nil {
 		return fmt.Errorf("failed to submit transaction: %w", err)
 	}
 
+	fmt.Printf("Transaction result: %s\n", string(result))
+
 	return nil
 }
+
+
 
 func loadCertificate(filename string) (*x509.Certificate, error) {
 	certificatePEM, err := os.ReadFile(filename)
@@ -266,6 +336,8 @@ func loadIdentity() (*identity.Wallet, error) {
 
 	return wallet, nil
 }
+
+
 
 func createIdentity(wallet *identity.Wallet) error {
 	// Load the user's certificate
@@ -298,13 +370,13 @@ func (c *contractImpl) Name() string {
 
 // getPeerEndpoints returns an array of peer endpoints that host the FPC chaincode enclave
 // An endpoint is a simple string with the format `host:port`
-func (c *contractImpl) getPeerEndpoints() ([]string, error) {
+func (c *contractImpl) getPeerEndpoints() (string, error) {
 	if len(c.peerEndpoints) == 0 {
 		resp, err := c.ercc.EvaluateTransaction("queryChaincodeEndPoints", c.Name())
 		if err != nil {
-			return nil, err
+			return "", err
 		}
 		c.peerEndpoints = strings.Split(string(resp), ",")
 	}
-	return c.peerEndpoints, nil
+	return c.peerEndpoints[0], nil
 }
