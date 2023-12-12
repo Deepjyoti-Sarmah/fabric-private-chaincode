@@ -17,9 +17,10 @@ import (
 	"github.com/hyperledger/fabric-gateway/pkg/client"
 	"github.com/hyperledger/fabric-gateway/pkg/identity"
 	"github.com/hyperledger/fabric-private-chaincode/internal/crypto"
-	"github.com/hyperledger/fabric-protos-go-apiv2/gateway"
+	// "github.com/hyperledger/fabric-protos-go-apiv2/gateway"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+
 	// "github.com/hyperledger/fabric-private-chaincode/internal/utils"
 	"github.com/hyperledger/fabric-sdk-go/pkg/gateway"
 )
@@ -137,8 +138,9 @@ func connectToEnclaveAndFetchEndpoint() (string, error) {
 	// Connect to the gateway
 	gw, err := client.Connect(
 		client.WithClientConnection(clientConnection),
-		client.WithIdentity(wallet, "User1"),
-		client.WithSigner(newSigner()),
+		// client.WithIdentity(wallet, "User1"),
+		// client.WithSigner(newSigner()),
+		client.WithSign(newSigner()),
 	)
 	if err != nil {
 		return "", err
@@ -308,8 +310,6 @@ func invokeFPCChaincode(gw *gateway.Gateway) error {
 	return nil
 }
 
-
-
 func loadCertificate(filename string) (*x509.Certificate, error) {
 	certificatePEM, err := os.ReadFile(filename)
 	if err != nil {
@@ -336,8 +336,6 @@ func loadIdentity() (*identity.Wallet, error) {
 
 	return wallet, nil
 }
-
-
 
 func createIdentity(wallet *identity.Wallet) error {
 	// Load the user's certificate
