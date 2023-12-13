@@ -1,6 +1,5 @@
 package main
 
-// package testgatewayapi
 
 import (
 	"crypto/x509"
