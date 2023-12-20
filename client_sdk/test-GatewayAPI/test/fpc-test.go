@@ -19,12 +19,6 @@ import (
 	"crypto/x509"
 )
 
-// const (
-// 	configPath    = "path_to_your_config.yaml"
-// 	channelName   = "mychannel"
-// 	chaincodeName = "mycc"
-// )
-
 type signer struct {
 	f identity.Sign
 }
@@ -34,24 +28,7 @@ func (s *signer) Sign(in []byte) ([]byte, error) {
 }
 
 func main() {
-	// // // Create a Fabric Gateway client
-	// // wallet, err := gateway.NewFileSystemWallet("wallet")
-	// // if err != nil {
-	// // 	log.Fatalf("Failed to create wallet: %v", err)
-	// // }
-
-	// // if !wallet.Exists("User1") {
-	// // 	log.Fatalf("Wallet does not exist: %v", err)
-	// // }
-
-	// // gw, err := gateway.Connect(
-	// // 	gateway.WithConfig(config.FromFile(configPath)),
-	// // 	gateway.WithIdentity(wallet, "User1"),
-	// // )
-	// // if err != nil {
-	// // 	log.Fatalf("Failed to connect to gateway: %v", err)
-	// // }
-	// defer gw.Close()
+	// Create a Fabric Gateway client
 
 	peerEndpoint := os.Getenv("CORE_PEER_ADDRESS")
 	gatewayPeer := os.Getenv("CORE_PEER_ID")
@@ -96,10 +73,9 @@ func main() {
 		channelName = cname
 	}
 
+	// Fetching FPC Endpoints
 	network := gw.GetNetwork(channelName)
-	//contract := network.GetContract(chaincodeName)
 	ercc := network.GetContract("ercc")
-
 	endpoints := fetchFPCEndpoints(ercc, chaincodeName)
 
 	if len(endpoints) != 1 {
@@ -108,40 +84,11 @@ func main() {
 
 	fmt.Printf("fppc endpoints: %v\n", endpoints)
 
+	// Establishing new gRPC connection with the FPC peer
 	connection := newGrpcConnection(endpoints[0], gatewayPeer)
 	fpcPeer := peer.NewEndorserClient(connection)
 
 	fmt.Printf("fpc peer: %v\n", fpcPeer)
-
-	// Get the network and ERCC contract
-	// network, err := gw.GetNetwork(channelName)
-	// if err != nil {
-	// 	log.Fatalf("Failed to get network: %v", err)
-	// }
-	// erccContract := network.GetContract("ercc")
-
-	// Evaluate the getEnclavePeerEndpoint transaction
-	// enclavePeerEndpoint, err := erccContract.EvaluateTransaction("queryChaincodeEndPoints")
-	// if err != nil {
-	// 	log.Fatalf("Failed to evaluate transaction: %v", err)
-	// }
-
-	// fmt.Printf("Enclave Peer Endpoint: %s\n", string(enclavePeerEndpoint))
-
-	// // Establish a new gRPC connection to the enclave peer
-	// enclaveClientConnection, err := newEnclaveGrpcConnection(string(enclavePeerEndpoint))
-	// if err != nil {
-	// 	log.Fatalf("Failed to establish gRPC connection to enclave peer: %v", err)
-	// }
-	// defer enclaveClientConnection.Close()
-
-	// // Invoke FPC chaincode via direct gRPC connection
-	// err = invokeFPCChaincode(enclaveClientConnection)
-	// if err != nil {
-	// 	log.Fatalf("Failed to invoke FPC chaincode: %v", err)
-	// }
-
-	// fmt.Println("Successfully invoked FPC chaincode")
 }
 
 func newGrpcConnection(peerEndpoint, gatewayPeer string) *grpc.ClientConn {
@@ -237,72 +184,3 @@ func loadCertificate(filename string) (*x509.Certificate, error) {
 	}
 	return identity.CertificateFromPEM(certificatePEM)
 }
-
-// func newEnclaveGrpcConnection(enclavePeerEndpoint string) (*grpc.ClientConn, error) {
-
-// 	cert, err := tls.LoadX509KeyPair(tlsCertPath, keyPath)
-// 	if err != nil {
-// 		return nil, fmt.Errorf("could not load client key pair: %s", err)
-// 	}
-
-// 	// Create a certificate pool
-// 	certPool, err := x509.SystemCertPool()
-// 	if err != nil {
-// 		return nil, fmt.Errorf("failed to get system cert pool: %s", err)
-// 	}
-
-// 	// Create the credentials and return them
-// 	config := &tls.Config{
-// 		Certificates: []tls.Certificate{cert},
-// 		RootCAs:      certPool,
-// 	}
-// 	netConn, err := grpc.Dial(enclavePeerEndpoint, grpc.WithTransportCredentials(credentials.NewTLS(config)))
-// 	if err != nil {
-// 		return nil, fmt.Errorf("did not connect: %s", err)
-// 	}
-
-// 	return netConn, nil
-// }
-
-// func invokeFPCChaincode(enclaveClientConnection *grpc.ClientConn) error {
-// 	// Create a new gRPC client for the FPC chaincode
-// 	client := gateway.NewGatewayClient(enclaveClientConnection)
-
-// 	// Create the context for the transaction
-// 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-// 	defer cancel()
-
-// 	// Create a new transaction
-// 	transaction, err := client.NewTransaction(ctx, &gateway.NewTransactionRequest{
-// 		ChannelId:     "mychannel",
-// 		ChaincodeId:   "mycc",
-// 		TransactionId: "tx1",
-// 		Args:          [][]byte{[]byte("arg1"), []byte("arg2")},
-// 	})
-
-// 	if err != nil {
-// 		return fmt.Errorf("failed to create new transaction: %w", err)
-// 	}
-
-// 	// Submit the transaction
-// 	_, err = client.Submit(ctx, &gateway.SubmitRequest{
-// 		TransactionId: transaction.TransactionId,
-// 		ChannelId:     "mychannel",
-// 	})
-// 	if err != nil {
-// 		return fmt.Errorf("failed to submit transaction: %w", err)
-// 	}
-
-// 	return nil
-// }
-
-// func (c *contractImpl) getPeerEndpoints() (string, error) {
-// 	if len(c.peerEndpoints) == 0 {
-// 		resp, err := c.ercc.EvaluateTransaction("queryChaincodeEndPoints", c.Name())
-// 		if err != nil {
-// 			return "", err
-// 		}
-// 		c.peerEndpoints = strings.Split(string(resp), ",")
-// 	}
-// 	return c.peerEndpoints[0], nil
-// }
