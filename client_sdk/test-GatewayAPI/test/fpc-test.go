@@ -184,3 +184,4 @@ func loadCertificate(filename string) (*x509.Certificate, error) {
 	}
 	return identity.CertificateFromPEM(certificatePEM)
 }
+
