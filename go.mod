@@ -27,7 +27,6 @@ require (
 	github.com/hyperledger/fabric-chaincode-go v0.0.0-20230228194215-b84622ba6a7a
 	github.com/hyperledger/fabric-contract-api-go v1.2.1
 	github.com/hyperledger/fabric-protos-go v0.3.0
-	github.com/hyperledger/fabric-samples/asset-transfer-basic/chaincode-go v0.0.0-20230505123407-84f9ba1dc4ec
 	github.com/hyperledger/fabric-sdk-go v1.0.1-0.20221020141211-7af45cede6af
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.6.1
 	github.com/onsi/ginkgo v1.16.5
@@ -42,8 +41,6 @@ require (
 	gopkg.in/yaml.v2 v2.4.0
 	honnef.co/go/tools v0.4.3
 )
-
-require github.com/hyperledger/fabric-protos-go-apiv2 v0.2.1 // indirect
 
 require (
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
@@ -82,7 +79,6 @@ require (
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/hyperledger/fabric-amcl v0.0.0-20221107192335-5c75bc7be9c0 // indirect
 	github.com/hyperledger/fabric-config v0.1.0 // indirect
-	github.com/hyperledger/fabric-gateway v1.4.0
 	github.com/hyperledger/fabric-lib-go v1.0.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/joho/godotenv v1.4.0 // indirect
